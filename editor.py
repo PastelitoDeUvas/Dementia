@@ -18,6 +18,8 @@ class MoniREditor(QMainWindow):
 
         self.setCentralWidget(self.editor)
 
+        self._create_menu()  
+
     def _create_menu(self):
         menubar = self.menuBar()
         file_menu = menubar.addMenu("Archivo")
