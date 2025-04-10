@@ -1,7 +1,11 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QAction
-from PyQt5.Qsci import QsciScintilla, QsciLexerR
-from PyQt5.QtGui import QFont
+from PyQt5.Qsci import QsciScintilla
+from PyQt5.QtGui import QFont, QColor, QKeyEvent
+from moni_r_lexer import MoniRLexer
+from editor_widget import MoniEditorWidget
+from PyQt5.QtCore import Qt
+
 
 class MoniREditor(QMainWindow):
     def __init__(self):
@@ -9,20 +13,10 @@ class MoniREditor(QMainWindow):
         self.setWindowTitle("MoniEditor para R")
         self.setGeometry(100, 100, 800, 600)
 
-        # Editor con QScintilla
-        self.editor = QsciScintilla()
-        font = QFont("Fira Code", 11)
-        self.editor.setFont(font)
-        self.editor.setMarginsFont(font)
-        self.editor.setMarginWidth(0, "00000")  # número de líneas
-
-        # Lexer para R
-        lexer = QsciLexerR()
-        lexer.setDefaultFont(font)
-        self.editor.setLexer(lexer)
+        self.editor = MoniEditorWidget()
+        self.editor.setLexer(MoniRLexer(self.editor))
 
         self.setCentralWidget(self.editor)
-        self._create_menu()
 
     def _create_menu(self):
         menubar = self.menuBar()
@@ -53,3 +47,4 @@ if __name__ == "__main__":
     window = MoniREditor()
     window.show()
     sys.exit(app.exec_())
+    
