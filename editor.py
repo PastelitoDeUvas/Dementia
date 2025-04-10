@@ -1,10 +1,8 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QAction
-from PyQt5.Qsci import QsciScintilla
-from PyQt5.QtGui import QFont, QColor, QKeyEvent
 from moni_r_lexer import MoniRLexer
 from editor_widget import MoniEditorWidget
-from PyQt5.QtCore import Qt
+
 
 
 class MoniREditor(QMainWindow):

@@ -1,6 +1,7 @@
 from PyQt5.Qsci import QsciScintilla
 from PyQt5.QtGui import QFont, QColor, QKeyEvent
 from PyQt5.QtCore import Qt
+import re
 
 class MoniEditorWidget(QsciScintilla):
     def __init__(self, parent=None):
@@ -28,7 +29,8 @@ class MoniEditorWidget(QsciScintilla):
     def keyPressEvent(self, event: QKeyEvent):
         key = event.text()
         cursor = self.getCursorPosition()
-
+    
+        # Autopareado de símbolos
         if key in self.pairs:
             selected_text = self.selectedText()
             if selected_text:
@@ -38,12 +40,26 @@ class MoniEditorWidget(QsciScintilla):
                 self.insert(key + self.pairs[key])
                 self.setCursorPosition(cursor[0], cursor[1] + 1)
                 return
-
+    
+        # Indentación automática al presionar Enter
         if event.key() == Qt.Key_Return:
-            line, col = self.getCursorPosition()
-            if self.text(line).rstrip().endswith('{'):
-                super().keyPressEvent(event)
-                self.insert("    ")
-                return
-
+            line, index = self.getCursorPosition()
+    
+            # Obtener línea anterior
+            prev_line = self.text(line - 1) if line > 0 else ""
+    
+            # Detectar espacios al inicio
+            indent_match = re.match(r'^(\s*)', prev_line)
+            current_indent = indent_match.group(1) if indent_match else ""
+            new_indent = current_indent
+    
+            # Agregar indentación si termina en {
+            if re.search(r'\{\s*(#.*)?$', prev_line.strip()):
+                new_indent += ' ' * self.tabWidth()
+    
+            super().keyPressEvent(event)  # hacer salto de línea
+            self.insert(new_indent)       # insertar indentación
+            return
+    
+        # Comportamiento normal
         super().keyPressEvent(event)
