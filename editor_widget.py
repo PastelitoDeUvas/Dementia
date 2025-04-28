@@ -15,8 +15,19 @@ class MoniEditorWidget(QsciScintilla):
         self.setIndentationsUseTabs(False)
         self.setTabWidth(4)
         self.setBraceMatching(QsciScintilla.SloppyBraceMatch)
-        self.setMarginsBackgroundColor(QColor("#2e2e2e"))
-        self.setMarginsForegroundColor(QColor("#aaaaaa"))
+
+        # Set the background color for the text area (where you're typing)
+        self.setPaper(QColor("#F4C7D2"))  # Set pastel pink background for the text area
+        
+        # Set the text color (foreground color for the code)
+        self.setColor(QColor("#2e2e2e"))  # Set the text color to a dark gray for the code
+
+
+
+        # Set the margins' background color
+        self.setMarginsBackgroundColor(QColor("#B8A9D4"))  # Pastel purple for the margin area
+        self.setMarginsForegroundColor(QColor("#B8A9D4")) # Pastel purple for the margin text
+
 
         self.pairs = {
             '"': '"',
