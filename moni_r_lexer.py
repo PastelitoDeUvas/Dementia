@@ -1,8 +1,9 @@
 from PyQt5.Qsci import QsciLexerCustom
-from PyQt5.QtGui import QColor, QFont
+from PyQt5.QtGui import QColor, QFont,QSyntaxHighlighter, QTextCharFormat
 import re
+from PyQt5.QtCore import QRegExp
 
-class MoniRLexer(QsciLexerCustom):
+class Moni_R_Lexer(QsciLexerCustom):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -85,3 +86,51 @@ class MoniRLexer(QsciLexerCustom):
                 count += 1
             self.setStyling(count, current_style)
             i += count
+
+
+
+
+
+
+
+class Moni_Python_Lexter(QSyntaxHighlighter):
+    def __init__(self, document):
+        super().__init__(document)
+
+        # Formatos
+        keyword_format = QTextCharFormat()
+        keyword_format.setForeground(QColor("#7C4DFF"))  # morado
+        keyword_format.setFontWeight(QFont.Bold)
+
+        string_format = QTextCharFormat()
+        string_format.setForeground(QColor("#43A047"))  # verde
+
+        comment_format = QTextCharFormat()
+        comment_format.setForeground(QColor("#9E9E9E"))  # gris
+        comment_format.setFontItalic(True)
+
+        self.rules = []
+
+        # Palabras clave
+        keywords = [
+            "def", "class", "import", "from", "as", "return", "if", "elif", "else",
+            "while", "for", "try", "except", "with", "lambda", "pass", "break",
+            "continue", "in", "is", "not", "and", "or", "None", "True", "False"
+        ]
+        self.rules += [(QRegExp(rf"\b{kw}\b"), keyword_format) for kw in keywords]
+
+        # Cadenas de texto
+        self.rules.append((QRegExp(r"\".*\""), string_format))
+        self.rules.append((QRegExp(r"\'.*\'"), string_format))
+
+        # Comentarios
+        self.rules.append((QRegExp(r"#.*"), comment_format))
+
+    def highlightBlock(self, text):
+        for pattern, fmt in self.rules:
+            expression = QRegExp(pattern)
+            index = expression.indexIn(text)
+            while index >= 0:
+                length = expression.matchedLength()
+                self.setFormat(index, length, fmt)
+                index = expression.indexIn(text, index + length)
