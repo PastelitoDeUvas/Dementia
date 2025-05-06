@@ -19,6 +19,7 @@ class MoniREditor(QMainWindow):
 
         self.setCentralWidget(self.editor)
         self.lenguaje_actual = "Plain text"
+        self.highlighter = None
 
         self._create_menu()  
 
@@ -36,7 +37,7 @@ class MoniREditor(QMainWindow):
 
 
         new_action = QAction("Nuevo", self)
-        new_action.triggered.connect(lambda: self.new_File)
+        new_action.triggered.connect(self.new_File)
         file_menu.addAction(new_action)
 
         open_action = QAction("Abrir", self)
@@ -68,7 +69,7 @@ class MoniREditor(QMainWindow):
         if ok and lenguaje:
             self.lenguaje_actual = lenguaje
             self.editor.clear()
-            self.editor.setPlaceholderText(f"Nuevo archivo de {lenguaje}...")
+            
 
             # Aplicar resaltador
             if self.highlighter:

@@ -1,6 +1,7 @@
 from PyQt5.Qsci import QsciScintilla
 from PyQt5.QtGui import QFont, QColor, QKeyEvent
 from PyQt5.QtCore import Qt
+
 import re
 
 class MoniEditorWidget(QsciScintilla):
