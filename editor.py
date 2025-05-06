@@ -76,7 +76,9 @@ class MoniREditor(QMainWindow):
                 self.highlighter.setDocument(None)  # Desactivar el anterior
 
             if lenguaje == "Python":
-                self.highlighter = Moni_Python_Lexter(self.editor.document())
+                self.highlighter = Moni_Python_Lexter(self.editor)
+                
+                self.editor.setLexer(self.highlighter)
             else:
                 self.highlighter = None  # Desactivar resaltador para otros lenguajes
 
