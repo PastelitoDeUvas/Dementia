@@ -107,6 +107,9 @@ class Moni_Python_Lexter(QsciLexerCustom):
             'string': 3,
             'number': 4,
             'function': 5,
+            'operator': 6,
+            'class': 7,
+            'builtin': 8,
         }
 
         self._define_styles()
@@ -120,6 +123,20 @@ class Moni_Python_Lexter(QsciLexerCustom):
             "try", "while", "with", "yield"
         ])
 
+        # Funciones embebidas (built-in)
+        self.builtins = set([
+            "abs", "all", "any", "ascii", "bin", "bool", "bytearray", "bytes",
+            "callable", "chr", "classmethod", "compile", "complex", "delattr",
+            "dict", "dir", "divmod", "enumerate", "eval", "exec", "filter",
+            "float", "format", "frozenset", "getattr", "globals", "hasattr",
+            "hash", "help", "hex", "id", "input", "int", "isinstance", "issubclass",
+            "iter", "len", "list", "locals", "map", "max", "memoryview", "min",
+            "next", "object", "oct", "open", "ord", "pow", "print", "property",
+            "range", "repr", "reversed", "round", "set", "setattr", "slice",
+            "sorted", "staticmethod", "str", "sum", "super", "tuple", "type",
+            "vars", "zip"
+        ])
+
     def _define_styles(self):
         self.setColor(QColor("#cccccc"), self.styles['default'])    # gris claro
         self.setColor(QColor("#ff79c6"), self.styles['keyword'])    # rosado
@@ -127,6 +144,9 @@ class Moni_Python_Lexter(QsciLexerCustom):
         self.setColor(QColor("#f1fa8c"), self.styles['string'])     # amarillo pastel
         self.setColor(QColor("#bd93f9"), self.styles['number'])     # violeta
         self.setColor(QColor("#8be9fd"), self.styles['function'])   # cian
+        self.setColor(QColor("#ffb86c"), self.styles['operator'])   # naranja pastel
+        self.setColor(QColor("#ff5555"), self.styles['class'])      # rojo pastel
+        self.setColor(QColor("#caa9fa"), self.styles['builtin'])    # lavanda
 
         self.setFont(QFont("Fira Code", 11), -1)
 
@@ -140,7 +160,10 @@ class Moni_Python_Lexter(QsciLexerCustom):
             2: "Comment",
             3: "String",
             4: "Number",
-            5: "Function"
+            5: "Function",
+            6: "Operator",
+            7: "Class",
+            8: "Builtin Function",
         }.get(style, "")
 
     def styleText(self, start, end):
@@ -155,20 +178,24 @@ class Moni_Python_Lexter(QsciLexerCustom):
 
         def apply_regex(regex, style, condition=None):
             for match in re.finditer(regex, text):
-                if condition and not condition(match.group()):
+                word = match.group()
+                if condition and not condition(word):
                     continue
                 for i in range(match.start(), match.end()):
                     if 0 <= i < length:
                         styles_buffer[i] = style
 
+        # Aplicar estilos
         apply_regex(r"#.*", self.styles['comment'])  # Comentarios
-        apply_regex(r'"""(?:.|\n)*?"""|\'\'\'(?:.|\n)*?\'\'\'|"(?:\\.|[^"])*"|\'(?:\\.|[^\'])*\'', self.styles['string'])  # Strings y docstrings
+        apply_regex(r'"""(?:.|\n)*?"""|\'\'\'(?:.|\n)*?\'\'\'|"(?:\\.|[^"])*"|\'(?:\\.|[^\'])*\'', self.styles['string'])  # Strings
         apply_regex(r"\b\d+(\.\d+)?\b", self.styles['number'])  # Números
         apply_regex(r"\b[a-zA-Z_]\w*(?=\s*\()", self.styles['function'])  # Funciones
-        apply_regex(r"\b[a-zA-Z_]\w*\b", self.styles['keyword'],
-                    condition=lambda word: word in self.keywords)  # Palabras clave
+        apply_regex(r"\b[A-Z][a-zA-Z0-9_]*\b", self.styles['class'])  # Clases (CamelCase)
+        apply_regex(r"\b[a-zA-Z_]\w*\b", self.styles['keyword'], condition=lambda w: w in self.keywords)  # Palabras clave
+        apply_regex(r"\b[a-zA-Z_]\w*\b", self.styles['builtin'], condition=lambda w: w in self.builtins)  # Built-ins
+        apply_regex(r"[+\-*/%=<>!&|^~]+", self.styles['operator'])  # Operadores
 
-        # Aplica los estilos desde el buffer
+        # Aplicar estilos
         self.startStyling(start)
         i = 0
         while i < length:
