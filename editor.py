@@ -1,10 +1,12 @@
+import os
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QAction,QInputDialog,QMessageBox
-
+import subprocess
+import tempfile
+from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QAction, \
+                            QInputDialog, QMessageBox
 from PyQt5.QtGui import QFont
-from moni_r_lexer import Moni_R_Lexer,Moni_Python_Lexter
+from moni_r_lexer import Moni_R_Lexer, Moni_Python_Lexter
 from editor_widget import MoniEditorWidget
-
 
 
 class MoniREditor(QMainWindow):
@@ -21,85 +23,120 @@ class MoniREditor(QMainWindow):
         self.lenguaje_actual = "Plain text"
         self.highlighter = None
 
-        self._create_menu()  
+        self._create_menu()
 
-
-
-    def _create_menu(self):     
-        # Principal menu bar
+    # ---------- MENÚ ----------
+    def _create_menu(self):
         menubar = self.menuBar()
 
-
-        # File menu
+        # Archivo
         file_menu = menubar.addMenu("Archivo")
-        file_menu.setStyleSheet("background-color: #B8A9D4; color: #2e2e2e;")  # Pastel purple background for the menu
+        file_menu.setStyleSheet(
+            "background-color: #B8A9D4; color: #2e2e2e;")
         file_menu.setFont(QFont("Fira Code", 11))
 
+        actions = [
+            ("Nuevo", self.new_File),
+            ("Abrir", self.open_file),
+            ("Guardar", self.save_file),
+            ("Ejecutar código R", self.run_r_code),
+        ]
+        for text, slot in actions:
+            act = QAction(text, self)
+            act.triggered.connect(slot)
+            file_menu.addAction(act)
 
-        new_action = QAction("Nuevo", self)
-        new_action.triggered.connect(self.new_File)
-        file_menu.addAction(new_action)
-
-        open_action = QAction("Abrir", self)
-        open_action.triggered.connect(self.open_file)
-        file_menu.addAction(open_action)
-
-        save_action = QAction("Guardar", self)
-        save_action.triggered.connect(self.save_file)
-        file_menu.addAction(save_action)
-
-        run_r_action = QAction("Ejecutar código R", self)
-        run_r_action.triggered.connect(self.run_r_code)
-        file_menu.addAction(run_r_action)
-
+    # ---------- I/O ----------
     def open_file(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Abrir archivo", filter="Archivos R (*.R *.r)")
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Abrir archivo", filter="Archivos R (*.R *.r)")
         if path:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 self.editor.setText(f.read())
 
     def save_file(self):
-        path, _ = QFileDialog.getSaveFileName(self, "Guardar archivo", filter="Archivos R (*.R *.r)")
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Guardar archivo", filter="Archivos R (*.R *.r)")
         if path:
             with open(path, "w", encoding="utf-8") as f:
                 f.write(self.editor.text())
 
+    # ---------- NUEVO ----------
     def new_File(self):
         lenguajes = ["Python", "R", "Plain text"]
         lenguaje, ok = QInputDialog.getItem(
-            self, "Selecciona el lenguaje", "Lenguaje:", lenguajes, 0, False
-        )
+            self, "Selecciona el lenguaje", "Lenguaje:", lenguajes, 0, False)
 
         if ok and lenguaje:
             self.lenguaje_actual = lenguaje
             self.editor.clear()
-            
 
-            # Aplicar resaltador
+            # Desvincular resaltador anterior
             if self.highlighter:
-                self.highlighter.setDocument(None)  # Desactivar el anterior
+                self.highlighter.setDocument(None)
 
             if lenguaje == "Python":
                 self.highlighter = Moni_Python_Lexter(self.editor)
-                
+                self.editor.setLexer(self.highlighter)
+            elif lenguaje == "R":
+                self.highlighter = Moni_R_Lexer(self.editor)
                 self.editor.setLexer(self.highlighter)
             else:
-                self.highlighter = None  # Desactivar resaltador para otros lenguajes
+                self.highlighter = None  # Sin resaltado
 
-
+    # ---------- EJECUTAR R ----------
     def run_r_code(self):
-        import subprocess
+        if self.lenguaje_actual != "R":
+            QMessageBox.warning(
+                self, "Lenguaje incorrecto",
+                "El documento actual no está marcado como R.")
+            return
+
+        # 1. Obtener código
+        codigo = self.editor.text()
+        if not codigo.strip():
+            QMessageBox.information(
+                self, "Nada que ejecutar",
+                "El código R está vacío, princesa.")
+            return
+
+        # 2. Crear archivo temporal
+        with tempfile.NamedTemporaryFile(
+                mode='w', suffix=".R", delete=False, encoding='utf-8') as tmp:
+            tmp.write(codigo)
+            tmp_path = tmp.name
+
+        # 3. Ejecutar con Rscript
         try:
-            # Aquí asumes que tienes un archivo R que quieres ejecutar, por ejemplo script.R
-            result = subprocess.run(["Rscript", "script.R"], capture_output=True, text=True)
+            result = subprocess.run(
+                ["Rscript", tmp_path],
+                capture_output=True, text=True, timeout=600)
+
+            salida = result.stdout.strip()
+            error = result.stderr.strip()
+
             if result.returncode == 0:
-                print("Código R ejecutado correctamente:\n", result.stdout)
+                QMessageBox.information(
+                    self, "Ejecución correcta",
+                    f"⚜️ Tu código R se ejecutó sin problemas, princesa:\n\n{salida or '(Sin salida)'}")
             else:
-                print("Error ejecutando código R:\n", result.stderr)
-        except Exception as e:
-            print("Ocurrió un error:", str(e))
+                QMessageBox.critical(
+                    self, "Error al ejecutar R",
+                    f"Hubo un problema, mi señora:\n\n{error or '(Sin detalles)'}")
 
-
+        except FileNotFoundError:
+            QMessageBox.critical(
+                self, "Rscript no encontrado",
+                "No pude encontrar el comando `Rscript`. "
+                "Asegúrate de que R esté instalado y su carpeta bin esté en el PATH.")
+        except subprocess.TimeoutExpired:
+            QMessageBox.critical(
+                self, "Ejecución muy larga",
+                "El código tardó demasiado. Aborta o revisa tu script.")
+        finally:
+            # 4. Limpiar archivo temporal
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
 
 
 if __name__ == "__main__":
@@ -107,4 +144,3 @@ if __name__ == "__main__":
     window = MoniREditor()
     window.show()
     sys.exit(app.exec_())
-    
