@@ -48,6 +48,10 @@ class MoniREditor(QMainWindow):
         save_action.triggered.connect(self.save_file)
         file_menu.addAction(save_action)
 
+        run_r_action = QAction("Ejecutar código R", self)
+        run_r_action.triggered.connect(self.run_r_code)
+        file_menu.addAction(run_r_action)
+
     def open_file(self):
         path, _ = QFileDialog.getOpenFileName(self, "Abrir archivo", filter="Archivos R (*.R *.r)")
         if path:
@@ -81,6 +85,19 @@ class MoniREditor(QMainWindow):
                 self.editor.setLexer(self.highlighter)
             else:
                 self.highlighter = None  # Desactivar resaltador para otros lenguajes
+
+
+    def run_r_code(self):
+        import subprocess
+        try:
+            # Aquí asumes que tienes un archivo R que quieres ejecutar, por ejemplo script.R
+            result = subprocess.run(["Rscript", "script.R"], capture_output=True, text=True)
+            if result.returncode == 0:
+                print("Código R ejecutado correctamente:\n", result.stdout)
+            else:
+                print("Error ejecutando código R:\n", result.stderr)
+        except Exception as e:
+            print("Ocurrió un error:", str(e))
 
 
 
